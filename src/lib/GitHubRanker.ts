@@ -2,6 +2,7 @@ import { GitHubGraphQLClient } from './GitHubGraphQLClient';
 import { Utility } from './Utility';
 import { ErrorConst } from './ErrorConst';
 import { Observable } from 'rxjs/Rx';
+import * as _ from 'lodash';
 
 
 /**
@@ -23,31 +24,37 @@ export class GitHubRanker {
 
     }
 
-    getOrganisationContributionRank() {
-        this.getRepos(this.organisation)
+    /**
+     * Mother function to fetch/calculate contribution ranking
+     */
+    public getOrganisationContributionRank() {
+        this.getRepos()
             .flatMap(() => this.formatContributorObs())
             .subscribe(
             () => {
-                console.log("SUC");
+                //console.log("SUC");
             }, (err) => {
                 console.log("ERR", err);
             }, () => {
-                console.log(this.repos);
+                this.contributions = _.sortBy(this.contributions, [o => -o.count, o => o.name]);
+                //console.log(this.repos);
                 console.log(this.contributions);
-                console.log("DONE");
+                console.log("DONE: ", this.countCommits());
             }
             )
     }
+
     /**
      * Recursively fetch all github repos
-     * @param organisation name of gitub organisation
      * @param cursor current pagnation location of GraphQL
      */
-    private getRepos(organisation: string, cursor?): Observable<any> {
+    private getRepos(cursor?): Observable<any> {
+        if (typeof this.organisation === "undefined") throw ErrorConst.UNSET_ORGANISATION;
+
         let q = (typeof cursor === "undefined") ? `first: 100` : `first: 100, after:"${cursor}"`;
         let query = `
         {
-        organization(login: "${organisation}") {
+        organization(login: "${this.organisation}") {
   	        repositories(${q}) {
                 pageInfo{
                     hasNextPage
@@ -75,7 +82,7 @@ export class GitHubRanker {
                 }
 
                 if (hasNextPage) {
-                    return this.getRepos(organisation, endCursor);
+                    return this.getRepos(endCursor);
                 } else {
                     //Last Page
                     this.repoLastCursor = endCursor;
@@ -84,7 +91,14 @@ export class GitHubRanker {
             })
     }
 
+    /**
+     * 
+     * @param repoKey id of the repo
+     * @param cursor current pagnation location of GraphQL
+     */
     private getContribution(repoKey: string, cursor?): Observable<any> {
+        if (typeof this.organisation === "undefined") throw ErrorConst.UNSET_ORGANISATION;
+
         let repo = this.repos[repoKey].name;
         let q = (typeof cursor === "undefined") ? `first: 100` : `first: 100, after:"${cursor}"`;
         let query = `
@@ -169,6 +183,9 @@ export class GitHubRanker {
 
     }
 
+    /**
+     * Iterate through repos object and contruct observable that fetches repo commits in parallel
+     */
     private formatContributorObs(): Observable<any> {
         if (typeof this.organisation === "undefined") throw ErrorConst.UNSET_ORGANISATION;
 
@@ -178,5 +195,18 @@ export class GitHubRanker {
             obs$ = ((typeof value.endCursor === "undefined")) ? obs$.merge(this.getContribution(key)) : obs$.merge(this.getContribution(key, value.endCursor));
         }
         return obs$;
+    }
+
+    /**
+     * Helper function to calculate #commits
+     */
+    private countCommits(): number {
+
+        let total = 0;
+        for (let [key, value] of Utility.entries(this.contributions)) {
+            total += value.count;
+        }
+
+        return total;
     }
 }
