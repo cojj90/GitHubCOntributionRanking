@@ -6,9 +6,9 @@ module.exports = function () {
       bundle: './src/main.ts'
     },
     output: {
-      filename: './build/[name].js',
-      library: "GitHubRank",
-      libraryTarget: "commonjs2"
+      filename: './build/[name].js'
+      // library: "GitHubRank",
+      // libraryTarget: "commonjs2"
     },
     resolve: {
       extensions: ['*', '.ts', '.js']
