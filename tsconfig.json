@@ -5,7 +5,9 @@
         "target": "es6",
         "noImplicitAny": false,
         "sourceMap": false,
-        "allowJs": true
+        "allowJs": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
     },
     "include": [
         "type/**/*",

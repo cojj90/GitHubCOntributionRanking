@@ -25,6 +25,8 @@
     "webpack": "^3.0.0"
   },
   "dependencies": {
-
+      "axios": "^0.16.2",
+      "graphql": "^0.10.3",
+      "rxjs": "^5.4.1"
   }
 }
