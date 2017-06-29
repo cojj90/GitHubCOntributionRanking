@@ -15,10 +15,13 @@ export class GitHubRanker {
     private repos: Object = {};
     private repoLastCursor: String;
 
-    private contributions: Object = {};
+    private contributions: any = {}; //typeing error with lodash...
 
     constructor(readonly GITHUB_ACCESS_KEY: string, organisation: string) {
-
+        if(_.isEmpty(GITHUB_ACCESS_KEY) || _.isEmpty(organisation)){
+            console.log("Please feed me a GitHub Token and Organisation name");
+            return;
+        } 
         this.githubGraphQLClinet = new GitHubGraphQLClient(GITHUB_ACCESS_KEY);
         this.organisation = organisation;
 
@@ -28,6 +31,7 @@ export class GitHubRanker {
      * Mother function to fetch/calculate contribution ranking
      */
     public getOrganisationContributionRank() {
+        if(_.isEmpty(this.organisation)) return;
         this.getRepos()
             .flatMap(() => this.formatContributorObs())
             .subscribe(
@@ -51,11 +55,11 @@ export class GitHubRanker {
     private getRepos(cursor?): Observable<any> {
         if (typeof this.organisation === "undefined") throw ErrorConst.UNSET_ORGANISATION;
 
-        let q = (typeof cursor === "undefined") ? `first: 100` : `first: 100, after:"${cursor}"`;
+        let selector = (typeof cursor === "undefined") ? `first: 100` : `first: 100, after:"${cursor}"`;
         let query = `
         {
         organization(login: "${this.organisation}") {
-  	        repositories(${q}) {
+  	        repositories(${selector}) {
                 pageInfo{
                     hasNextPage
                     endCursor
@@ -100,7 +104,7 @@ export class GitHubRanker {
         if (typeof this.organisation === "undefined") throw ErrorConst.UNSET_ORGANISATION;
 
         let repo = this.repos[repoKey].name;
-        let q = (typeof cursor === "undefined") ? `first: 100` : `first: 100, after:"${cursor}"`;
+        let selector = (typeof cursor === "undefined") ? `first: 100` : `first: 100, after:"${cursor}"`;
         let query = `
         {
         organization(login: "${this.organisation}") {
@@ -110,7 +114,7 @@ export class GitHubRanker {
                         ... on Commit {
                             id
                             message
-                            history(${q}) {
+                            history(${selector}) {
                                 pageInfo {
                                     endCursor
                                     hasNextPage

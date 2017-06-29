@@ -24,6 +24,7 @@
     "webpack": "^3.0.0"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.67",
     "axios": "^0.16.2",
     "graphql": "^0.10.3",
     "lodash": "^4.17.4",
